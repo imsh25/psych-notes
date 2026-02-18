@@ -2,19 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function Admin() {
   const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    loadRequests();
+    checkAuth();
   }, []);
 
-  const loadRequests = async () => {
+  const checkAuth = async () => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    loadRequests(session);
+  };
+
+  const loadRequests = async (session) => {
     const res = await fetch("/api/admin/get-requests", {
       headers: {
         Authorization: `Bearer ${session.access_token}`,
@@ -23,31 +35,38 @@ export default function Admin() {
 
     const data = await res.json();
     setRequests(data);
+    setLoading(false);
   };
 
   const approve = async (request) => {
-  console.log("Approve button clicked");
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    if (!session) return;
 
-  const res = await fetch("/api/admin/approve", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({
-      requestId: request.id,
-    }),
-  });
+    await fetch("/api/admin/approve", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        requestId: request.id,
+      }),
+    });
 
-  const data = await res.json();
-  console.log("Approve response:", data);
+    loadRequests(session);
+  };
 
-  loadRequests();
-};
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-10">
       <h1 className="text-2xl mb-6">Pending Payments</h1>
