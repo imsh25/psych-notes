@@ -1,33 +1,28 @@
-"use client";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-import dynamicImport from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/router";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 
-// Dynamically import react-pdf (NO SSR)
-const Document = dynamicImport(
+// Disable SSR completely
+const Document = dynamic(
   () => import("react-pdf").then((mod) => mod.Document),
   { ssr: false }
 );
 
-const Page = dynamicImport(
+const Page = dynamic(
   () => import("react-pdf").then((mod) => mod.Page),
   { ssr: false }
 );
 
 export default function Viewer() {
-  const searchParams = useSearchParams();
-  const url = searchParams.get("url");
+  const router = useRouter();
+  const { url } = router.query;
 
   const [numPages, setNumPages] = useState(null);
 
   if (!url) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        Invalid file
+        Loading...
       </div>
     );
   }
