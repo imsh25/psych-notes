@@ -11,11 +11,18 @@ export default function Admin() {
   }, []);
 
   const loadRequests = async () => {
-    const { data } = await supabase
-      .from("payment_requests")
-      .select("*");
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    setRequests(data || []);
+    const res = await fetch("/api/admin/get-requests", {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    const data = await res.json();
+    setRequests(data);
   };
 
   const approve = async (request) => {
@@ -43,11 +50,10 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-900 text-white p-10">
       <h1 className="text-2xl mb-6">Pending Payments</h1>
 
+      {requests.length === 0 && <p>No pending requests</p>}
+
       {requests.map((req) => (
-        <div
-          key={req.id}
-          className="border p-4 mb-4 rounded-lg"
-        >
+        <div key={req.id} className="border p-4 mb-4 rounded-lg">
           <p>User ID: {req.user_id}</p>
           <p>Note ID: {req.note_id}</p>
 
