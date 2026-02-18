@@ -1,16 +1,24 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useSearchParams } from "next/navigation";
-import { Document, Page, pdfjs } from "react-pdf";
 import { useState } from "react";
+import dynamic from "next/dynamic";
+
+export const dynamicRendering = "force-dynamic";
+
+// ✅ Dynamically import react-pdf components (SSR disabled)
+const Document = dynamic(
+  () => import("react-pdf").then((mod) => mod.Document),
+  { ssr: false }
+);
+
+const Page = dynamic(
+  () => import("react-pdf").then((mod) => mod.Page),
+  { ssr: false }
+);
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-
-pdfjs.GlobalWorkerOptions.workerSrc =
-  "https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs";
 
 export default function Viewer() {
   const searchParams = useSearchParams();
@@ -35,18 +43,19 @@ export default function Viewer() {
             setNumPages(numPages)
           }
         >
-          {Array.from(
-            new Array(numPages),
-            (el, index) => (
-              <Page
-                key={`page_${index + 1}`}
-                pageNumber={index + 1}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                className="mb-6"
-              />
-            )
-          )}
+          {numPages &&
+            Array.from(
+              new Array(numPages),
+              (el, index) => (
+                <Page
+                  key={`page_${index + 1}`}
+                  pageNumber={index + 1}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  className="mb-6"
+                />
+              )
+            )}
         </Document>
       </div>
     </div>
