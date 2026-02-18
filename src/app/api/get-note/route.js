@@ -19,7 +19,7 @@ export async function POST(req) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // ✅ Get logged in user from token
+    // ✅ Get user from token (DO NOT trust frontend)
     const {
       data: { user },
       error: userError,
@@ -36,69 +36,55 @@ export async function POST(req) {
 
     if (!noteId) {
       return NextResponse.json(
-        { error: "Note ID required" },
+        { error: "Missing note ID" },
         { status: 400 }
       );
     }
 
-    // ✅ Check purchase
-    const { data: purchase } = await supabase
-      .from("purchases")
-      .select("id")
-      .eq("note_id", noteId)
-      .eq("user_id", user.id)
-      .single();
+    console.log("Checking purchase for user:", user.id);
+    console.log("Checking note:", noteId);
 
-    if (!purchase) {
+    // ✅ Check purchase properly
+    const { data: purchase, error: purchaseError } =
+      await supabase
+        .from("purchases")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("note_id", noteId)
+        .maybeSingle();
+
+    if (purchaseError || !purchase) {
+      console.log("Purchase not found");
       return NextResponse.json(
         { error: "Access denied" },
         { status: 403 }
       );
     }
-// ✅ Validate device session
-const deviceId = req.headers.get("x-device-id");
 
-if (!deviceId) {
-  return NextResponse.json(
-    { error: "Device missing" },
-    { status: 403 }
-  );
-}
+    console.log("Purchase found. Access granted.");
 
-const { data: deviceSession } = await supabase
-  .from("active_sessions")
-  .select("id")
-  .eq("user_id", user.id)
-  .eq("device_id", deviceId)
-  .single();
+    // ✅ Get note file path
+    const { data: note, error: noteError } =
+      await supabase
+        .from("notes")
+        .select("file_path")
+        .eq("id", noteId)
+        .single();
 
-if (!deviceSession) {
-  return NextResponse.json(
-    { error: "Session expired. Please login again." },
-    { status: 403 }
-  );
-}
-    // ✅ Get file path
-    const { data: note } = await supabase
-      .from("notes")
-      .select("file_path")
-      .eq("id", noteId)
-      .single();
-
-    if (!note) {
+    if (noteError || !note) {
       return NextResponse.json(
         { error: "Note not found" },
-        { status: 404 }
+        { status: 400 }
       );
     }
 
-    // ✅ Download file from private storage
-    const { data: fileData, error } =
+    // ✅ Download file from storage
+    const { data: fileData, error: fileError } =
       await supabase.storage
         .from("private-notes")
         .download(note.file_path);
 
-    if (error || !fileData) {
+    if (fileError) {
       return NextResponse.json(
         { error: "File error" },
         { status: 400 }
@@ -108,13 +94,11 @@ if (!deviceSession) {
     return new Response(fileData, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": "inline",
-        "Cache-Control": "no-store",
-        "Pragma": "no-cache",
       },
     });
 
   } catch (err) {
+    console.error("Server error:", err);
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }
