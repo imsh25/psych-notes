@@ -1,3 +1,7 @@
+const body = await req.json();
+console.log("Approve body:", body);
+
+const { requestId, userId, noteId } = body;
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
