@@ -4,25 +4,15 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
   const { inviteCode } = await req.json();
 
-  if (!inviteCode) {
-    return NextResponse.json({ valid: false });
-  }
-
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const { data } = await supabase
+  await supabase
     .from("invite_codes")
-    .select("*")
-    .eq("code", inviteCode)
-    .eq("is_used", false)
-    .single();
+    .update({ is_used: true })
+    .eq("code", inviteCode);
 
-  if (!data) {
-    return NextResponse.json({ valid: false });
-  }
-
-  return NextResponse.json({ valid: true });
+  return NextResponse.json({ success: true });
 }

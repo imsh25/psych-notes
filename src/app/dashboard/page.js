@@ -51,18 +51,31 @@ export default function Dashboard() {
   };
 
   const handleBuy = async (noteId) => {
-    setProcessingId(noteId);
+  setProcessingId(noteId);
 
-    await supabase.from("purchases").insert([
-      {
-        user_id: user.id,
-        note_id: noteId,
-      },
-    ]);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-    setPurchased([...purchased, noteId]);
-    setProcessingId(null);
-  };
+  const res = await fetch("/api/create-payment-request", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ noteId }),
+  });
+
+  if (res.ok) {
+    alert(
+      "Payment request submitted.\n\nSend payment screenshot to admin for approval."
+    );
+  } else {
+    alert("Something went wrong.");
+  }
+
+  setProcessingId(null);
+};
 
   const handleView = async (noteId) => {
   setViewingId(noteId);

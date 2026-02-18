@@ -20,7 +20,7 @@ export default function Register() {
     const res = await fetch("/api/validate-invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: inviteCode }),
+      body: JSON.stringify({ inviteCode }),
     });
 
     const result = await res.json();
@@ -39,11 +39,17 @@ export default function Register() {
     setLoading(false);
 
     if (error) {
-      alert(error.message);
-    } else {
-      alert("Registration successful. Please login.");
-      router.push("/login");
-    }
+  alert(error.message);
+} else {
+  await fetch("/api/use-invite", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ inviteCode }),
+  });
+
+  alert("Registration successful. Please login.");
+  router.push("/login");
+}
   };
 
   return (
