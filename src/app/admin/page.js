@@ -26,26 +26,28 @@ export default function Admin() {
   };
 
   const approve = async (request) => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+  console.log("Approve button clicked");
 
-    await fetch("/api/admin/approve", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        requestId: request.id,
-        userId: request.user_id,
-        noteId: request.note_id,
-      }),
-    });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-    loadRequests();
-  };
+  const res = await fetch("/api/admin/approve", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      requestId: request.id,
+    }),
+  });
 
+  const data = await res.json();
+  console.log("Approve response:", data);
+
+  loadRequests();
+};
   return (
     <div className="min-h-screen bg-gray-900 text-white p-10">
       <h1 className="text-2xl mb-6">Pending Payments</h1>
