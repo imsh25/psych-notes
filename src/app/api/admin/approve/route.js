@@ -31,10 +31,20 @@ export async function POST(req) {
   const { requestId, userId, noteId } = await req.json();
 
   // Insert purchase
-  await supabase.from("purchases").insert({
+  const { error: insertError } = await supabase
+  .from("purchases")
+  .insert({
     user_id: userId,
     note_id: noteId,
   });
+
+if (insertError) {
+  console.error("Insert error:", insertError);
+  return NextResponse.json(
+    { error: insertError.message },
+    { status: 500 }
+  );
+}
 
   // Delete request
   await supabase
